@@ -66,7 +66,7 @@ rownames(gex.data) <- combined_names
 #
 
 # Defining genes of interest
-current_gene_id <- "SAMD9L"
+current_gene_id <- "GBP4"
 
 # Cluster based on methylation
 cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]],
@@ -85,9 +85,6 @@ promoter_state <- if (mean(beta.adjusted[names(cpgs)[cpgs=="promoter"],cluster_p
   as.factor(ifelse(cluster_promoter$cluster == 2, "Hypermethylated", "Hypomethylated"))
   
 }
-
-# ANNOTATION
-
 
 # Generating annotation for heatmap
 tnbc_annotation <- annotations[,"TNBCtype4"]
@@ -137,6 +134,8 @@ Heatmap(beta.adjusted[names(cpgs)[names(cpgs) %in% rownames(beta.adjusted)],],
         clustering_method_rows = "ward.D2",
         name = "Beta")
 
+# Testing significance in expression between groups
+wilcox.test(as.numeric(gex.data[current_gene_id,]) ~ promoter_state)
 
 #
 # PLOTTING TILEPLOT OF PROMOTER HYPERMETHYLATION OF SELECTED GENES

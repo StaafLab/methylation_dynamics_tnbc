@@ -101,7 +101,6 @@ boxplot(oas2_per_cell_12$Mean.PanCK ~ oas2_per_cell_12$GMM_Label)
 # Remove non-tumour cells from df
 oas2_per_cell_12 <- oas2_per_cell_12[oas2_per_cell_12$GMM_Label == "Tumour", ]
 
-
 # Adding pdid
 oas2_per_cell_12$"PDid" <- sapply(
   oas2_per_cell_12$Tissue_ID, function(tissue_name) {

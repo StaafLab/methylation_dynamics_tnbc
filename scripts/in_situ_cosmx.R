@@ -120,7 +120,7 @@ oas2_per_cell_12$"Methylation" <- sapply(
 
 # Summarizing per Core (Tissue ID)
 summary_per_tissue_12 <- oas2_per_cell_12 %>%
-  group_by(Tissue_ID) %>%
+  group_by(PDid) %>%
   summarise(
     PDid = dplyr::first(PDid),
     Methylation = dplyr::first(Methylation),
@@ -128,17 +128,17 @@ summary_per_tissue_12 <- oas2_per_cell_12 %>%
     mean_OAS2 = mean(OAS2_Count, na.rm = TRUE),
     prop_OAS2 = mean(OAS2_Count > 0, na.rm = TRUE),
     
-    mean_BRCA1 = mean(BRCA1_Count, na.rm = TRUE),
-    prop_BRCA1 = mean(BRCA1_Count > 0, na.rm = TRUE),
+    #mean_BRCA1 = mean(BRCA1_Count, na.rm = TRUE),
+    #prop_BRCA1 = mean(BRCA1_Count > 0, na.rm = TRUE),
     
-    mean_SMO = mean(SMO_Count, na.rm = TRUE),
-    prop_SMO = mean(SMO_Count > 0, na.rm = TRUE),
+    #mean_SMO = mean(SMO_Count, na.rm = TRUE),
+    #prop_SMO = mean(SMO_Count > 0, na.rm = TRUE),
     
-    mean_GSTP1 = mean(GSTP1_Count, na.rm = TRUE),
-    prop_GSTP1 = mean(GSTP1_Count > 0, na.rm = TRUE),
+    #mean_GSTP1 = mean(GSTP1_Count, na.rm = TRUE),
+    #prop_GSTP1 = mean(GSTP1_Count > 0, na.rm = TRUE),
     
-    mean_AR = mean(AR_Count, na.rm = TRUE),
-    prop_AR = mean(AR_Count > 0, na.rm = TRUE)
+    #mean_AR = mean(AR_Count, na.rm = TRUE),
+    #prop_AR = mean(AR_Count > 0, na.rm = TRUE)
   )
 
 
@@ -174,8 +174,7 @@ counts_samples <- c("Hypermethylated" = nrow(na.omit(unique(summary_per_tissue_1
 
 
 labels_with_counts <- paste0(
-  "n=", counts_cores[names(counts_cores)], 
-  "\ns=", counts_samples[names(counts_cores)]
+  "n=", counts_cores[names(counts_cores)]
 )
 
 # Prepare the labels as a dataframe
@@ -185,8 +184,8 @@ label_df <- data.frame(
 
 
 ex_plot <- ggplot(filter(summary_per_tissue_12, !is.na(summary_per_tissue_12$Methylation)), aes(x=Methylation, y=mean_OAS2)) +
-  geom_violin(fill="black", width=1.1) +
-  geom_boxplot(fill="grey90", col="grey40", width=0.13) +
+  geom_jitter(fill="grey90", col="black", width = 0.25, size=0.7) +
+  
   theme_bw(base_size = 14) +
   xlab(NULL) +
   ylim(0,1.52) +
@@ -200,8 +199,7 @@ ex_plot <- ggplot(filter(summary_per_tissue_12, !is.na(summary_per_tissue_12$Met
 
 # Proportion of cells with detected expressin of OAS2
 prop_plot <- ggplot(filter(summary_per_tissue_12, !is.na(summary_per_tissue_12$Methylation)), aes(x=Methylation, y=prop_OAS2 * 100)) +
-  geom_violin(fill="black", width=1.1) +
-  geom_boxplot(fill="grey90", col="grey40", width=0.13) +
+  geom_jitter(fill="grey90", col="black", width = 0.25, size=0.7) +
   theme_bw(base_size = 14) +
   xlab(NULL) +
   ylim(0,38) +

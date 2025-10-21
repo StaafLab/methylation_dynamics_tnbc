@@ -44,7 +44,6 @@ hbca_epithelial <- readRDS("/Volumes/Data/Project_3/normal_breast_single_cell/hb
 
 # Getting Ensembl IDS from gene names
 epi_normal <- DotPlot(hbca_epithelial, 
-                      scale = FALSE,
                       features = names(genes_dict), 
                       assay = "RNA",
                       group.by = "cell_type") + 

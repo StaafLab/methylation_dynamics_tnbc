@@ -330,7 +330,7 @@ max_pairwise_diff <- apply(tf_proportions, 2, function(x) {
 })
 
 # Select top 50 most differential TFs based on pairwise difference
-top_tfs_pw <- names(sort(max_pairwise_diff, decreasing = TRUE)[1:35])
+top_tfs_pw <- names(sort(max_pairwise_diff, decreasing = TRUE)[1:25])
 
 # Subset and melt the original proportions (excluding "All")
 plot_data <- as.data.frame(tf_proportions[1:7, top_tfs_pw])

@@ -1,6 +1,7 @@
 #! usr/bin/Rscript
 
 library(ComplexHeatmap)
+library(ggplot2)
 
 #
 # LOADING DATA
@@ -106,3 +107,5 @@ Heatmap(
 )
 
 dev.off()
+
+

@@ -145,7 +145,12 @@ Heatmap(
 # PLOTTING CPGS AFFECTING 
 #
 
-current_gene_id = "SAMD9L"
+my_genes <- c("GBP4", "OAS2", "CARD16", "ZBP1", "SAMD9L")
+heatmap_list <- list()
+
+for (current_gene_id in my_genes) {
+  
+  
   
   
   # Create top anotation
@@ -153,14 +158,14 @@ current_gene_id = "SAMD9L"
                                       TNBC = tnbc_annotation,
                                       HRD = HRD_annotation,
                                       Epitype = epi_annotation,
-                                       TILs = anno_points(tils_annotation,
-                                                          ylim=c(0,100),
-                                                          size=unit(0.75, "mm"),
-                                                          axis_param = list(
-                                                            side="left",
-                                                            at=c(0,25,50,75,100),
-                                                            labels=c("0","25","50","75","100")
-                                                          )),
+                                      TILs = anno_points(tils_annotation,
+                                                         ylim=c(0,100),
+                                                         size=unit(0.75, "mm"),
+                                                         axis_param = list(
+                                                           side="left",
+                                                           at=c(0,25,50,75,100),
+                                                           labels=c("0","25","50","75","100")
+                                                         )),
                                       col = list(
                                         "PAM50"=c("Basal"="indianred1", "Non-Basal"="darkblue","Uncl."="grey"),
                                         "HRD"=c("High"="darkred", "Low/Inter"="lightcoral"),
@@ -196,11 +201,11 @@ current_gene_id = "SAMD9L"
   cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]],
                    annoObj$illuminaID[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]])
   
-  cluster_promoter <- kmeans(t(betaAdj[names(cpgs)[cpgs=="promoter"],]), centers = 2)
+  cluster_promoter <- kmeans(t(betaAdj[names(cpgs),]), centers = 2)
   
   # Determine hypo and hypermethylated cluster
-  promoter_state <- if (mean(betaAdj[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==1]) >
-                             mean(betaAdj[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==2])) {
+  promoter_state <- if (mean(betaAdj[names(cpgs),cluster_promoter$cluster==1]) >
+                        mean(betaAdj[names(cpgs),cluster_promoter$cluster==2])) {
     
     as.factor(ifelse(cluster_promoter$cluster == 1, "Hypermethylated", "Hypomethylated"))
     
@@ -212,7 +217,7 @@ current_gene_id = "SAMD9L"
   
   
   # Heatmap of genes
-  Heatmap(
+  heatmap_list[[current_gene_id]] <- Heatmap(
     betaAdj[names(genes)[genes == current_gene_id],],
     cluster_columns = TRUE,
     show_row_names = FALSE,
@@ -231,9 +236,22 @@ current_gene_id = "SAMD9L"
   )
   
   
-  #
-  # PLOTTING BOXPLOTS. TILs AND GENE EXPRESSION
-  #
+}
+
+#Heatmaps
+heatmap_grobs <- lapply(heatmap_list, function(ht) {
+  grid.grabExpr(draw(ht,
+                     show_heatmap_legend = FALSE,
+                     show_annotation_legend = FALSE))
+})
+
+wrap_plots(heatmap_grobs, ncol = 5)
+
+
+  
+#
+# PLOTTING BOXPLOTS. TILs AND GENE EXPRESSION
+#
   
   # Convert data to a dataframe for ggplot2
   plot_data <- data.frame(
@@ -254,9 +272,9 @@ current_gene_id = "SAMD9L"
     GBP4_Methylation_State = with(annoObj, {
       cpgs <- setNames(featureClass[illuminaID %in% names(genes)[genes == "GBP4"]],
                        illuminaID[illuminaID %in% names(genes)[genes == "GBP4"]])
-      km <- kmeans(t(betaAdj[names(cpgs)[cpgs == "promoter"], ]), centers = 2)
-      if (mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 1]) >
-          mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 2])) {
+      km <- kmeans(t(betaAdj[names(cpgs), ]), centers = 2)
+      if (mean(betaAdj[names(cpgs), km$cluster == 1]) >
+          mean(betaAdj[names(cpgs), km$cluster == 2])) {
         as.factor(ifelse(km$cluster == 1, "Hyper.", "Hypo."))
       } else {
         as.factor(ifelse(km$cluster == 2, "Hyper.", "Hypo."))
@@ -265,9 +283,9 @@ current_gene_id = "SAMD9L"
     OAS2_Methylation_State = with(annoObj, {
       cpgs <- setNames(featureClass[illuminaID %in% names(genes)[genes == "OAS2"]],
                        illuminaID[illuminaID %in% names(genes)[genes == "OAS2"]])
-      km <- kmeans(t(betaAdj[names(cpgs)[cpgs == "promoter"], ]), centers = 2)
-      if (mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 1]) >
-          mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 2])) {
+      km <- kmeans(t(betaAdj[names(cpgs), ]), centers = 2)
+      if (mean(betaAdj[names(cpgs), km$cluster == 1]) >
+          mean(betaAdj[names(cpgs), km$cluster == 2])) {
         as.factor(ifelse(km$cluster == 1, "Hyper.", "Hypo."))
       } else {
         as.factor(ifelse(km$cluster == 2, "Hyper.", "Hypo."))
@@ -276,9 +294,9 @@ current_gene_id = "SAMD9L"
     ZBP1_Methylation_State = with(annoObj, {
       cpgs <- setNames(featureClass[illuminaID %in% names(genes)[genes == "ZBP1"]],
                        illuminaID[illuminaID %in% names(genes)[genes == "ZBP1"]])
-      km <- kmeans(t(betaAdj[names(cpgs)[cpgs == "promoter"], ]), centers = 2)
-      if (mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 1]) >
-          mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 2])) {
+      km <- kmeans(t(betaAdj[names(cpgs), ]), centers = 2)
+      if (mean(betaAdj[names(cpgs), km$cluster == 1]) >
+          mean(betaAdj[names(cpgs), km$cluster == 2])) {
         as.factor(ifelse(km$cluster == 1, "Hyper.", "Hypo."))
       } else {
         as.factor(ifelse(km$cluster == 2, "Hyper.", "Hypo."))
@@ -287,9 +305,9 @@ current_gene_id = "SAMD9L"
     CARD16_Methylation_State = with(annoObj, {
       cpgs <- setNames(featureClass[illuminaID %in% names(genes)[genes == "CARD16"]],
                        illuminaID[illuminaID %in% names(genes)[genes == "CARD16"]])
-      km <- kmeans(t(betaAdj[names(cpgs)[cpgs == "promoter"], ]), centers = 2)
-      if (mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 1]) >
-          mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 2])) {
+      km <- kmeans(t(betaAdj[names(cpgs), ]), centers = 2)
+      if (mean(betaAdj[names(cpgs), km$cluster == 1]) >
+          mean(betaAdj[names(cpgs), km$cluster == 2])) {
         as.factor(ifelse(km$cluster == 1, "Hyper.", "Hypo."))
       } else {
         as.factor(ifelse(km$cluster == 2, "Hyper.", "Hypo"))
@@ -299,9 +317,9 @@ current_gene_id = "SAMD9L"
     SAMD9L_Methylation_State = with(annoObj, {
       cpgs <- setNames(featureClass[illuminaID %in% names(genes)[genes == "SAMD9L"]],
                        illuminaID[illuminaID %in% names(genes)[genes == "SAMD9L"]])
-      km <- kmeans(t(betaAdj[names(cpgs)[cpgs == "promoter"], ]), centers = 2)
-      if (mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 1]) >
-          mean(betaAdj[names(cpgs)[cpgs == "promoter"], km$cluster == 2])) {
+      km <- kmeans(t(betaAdj[names(cpgs), ]), centers = 2)
+      if (mean(betaAdj[names(cpgs), km$cluster == 1]) >
+          mean(betaAdj[names(cpgs), km$cluster == 2])) {
         as.factor(ifelse(km$cluster == 1, "Hyper.", "Hypo."))
       } else {
         as.factor(ifelse(km$cluster == 2, "Hyper.", "Hypo."))
@@ -316,8 +334,8 @@ current_gene_id = "SAMD9L"
   # Function to make plots
   make_expression_boxplot <- function(gene, y_label, x_label, ymax) {
     ggplot(plot_data, aes_string(x = paste0(gene, "_Methylation_State"), y = paste0(gene, "_FPKM"))) +
-      geom_violin(fill="black") +
-      geom_boxplot(outlier.shape = NA, width=0.15, fill="grey90", col="grey40",) +
+      geom_violin(fill="black", size = 0.2) +
+      geom_boxplot(outlier.shape = NA, width=0.15, fill="grey90", col="grey40", size = 0.2) +
       theme_bw(base_size = 14) +
       labs(x = x_label, y = y_label) +
       theme(legend.position = "none", axis.text.x = element_text(angle = 0)) +
@@ -346,7 +364,7 @@ current_gene_id = "SAMD9L"
     
     ggplot(plot_data, aes_string(x = paste0(gene, "_Methylation_State"), y = "TILs", fill = paste0(gene, "_Methylation_State"))) +
       geom_violin(fill="black") +
-      geom_boxplot(outlier.shape = NA, width=0.15, fill="grey90", col="grey40",) +
+      geom_boxplot(outlier.shape = NA, width=0.15, fill="grey90", col="grey40", size = 0.2) +
       theme_bw(base_size = 14) +  # Classic theme
       labs(x = x_label, y = y_label) +
       theme(legend.position = "none", axis.text.x = element_text(angle = 0)) +
@@ -435,11 +453,11 @@ for(current_gene_id in gene_ids) {
   cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]],
                    annoObj$illuminaID[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]])
   
-  cluster_promoter <- kmeans(t(betaAdj[names(cpgs)[cpgs=="promoter"],]), centers = 2)
+  cluster_promoter <- kmeans(t(betaAdj[names(cpgs),]), centers = 2)
   
   # Determine hypo and hypermethylated cluster
-  promoter_state <- if (mean(betaAdj[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==1]) >
-                             mean(betaAdj[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==2])) {
+  promoter_state <- if (mean(betaAdj[names(cpgs),cluster_promoter$cluster==1]) >
+                             mean(betaAdj[names(cpgs),cluster_promoter$cluster==2])) {
     
     as.factor(ifelse(cluster_promoter$cluster == 1, "Hypermethylated", "Hypomethylated"))
     
@@ -512,6 +530,8 @@ Heatmap(clusters_methylation,
         cluster_rows = FALSE,
         cluster_columns = FALSE,
         column_split = as.factor(ifelse(pam50_annotations == "Basal", "Basal", "NonBasal")))
+
+
 
 tnbc_annotation_factor <- factor(tnbc_annotation,
                           levels = c("BL1", "BL2", "M", "LAR"))

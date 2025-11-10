@@ -310,10 +310,13 @@ for (gene in genes) {
   
 }
 
+#Plotting tils vs methylation state
 list_of_tils_plots[[1]] | list_of_tils_plots[[2]] | list_of_tils_plots[[3]] | list_of_tils_plots[[4]]
+
+# Plotting gex vs methylation state
 list_of_gex_plots[[1]] | list_of_gex_plots[[2]] | list_of_gex_plots[[3]] | list_of_gex_plots[[4]]
 
-#Heatmaps
+#Heatmaps of genes
 heatmap_grobs <- lapply(list_of_heatmaps, function(ht) {
   grid.grabExpr(draw(ht,
                      show_heatmap_legend = FALSE,
@@ -426,10 +429,10 @@ for (gene in genes) {
       tcga$annoObj$featureClass %in% c("Promoter", "Proximal", "Distal")
   ]
   
-  # --- subset beta matrix ---
+  # Subset beta matrix
   beta_mat <- tcga$betaAdj[my_cpgs, , drop = FALSE]
   
-  # --- cluster methylation pattern ---
+  # Cluster methylation pattern
   clusters_gene <- as.factor(kmeans(t(beta_mat), 2)$cluster)
   cluster_means <- tapply(colMeans(beta_mat), clusters_gene, mean)
   cluster_label <- ifelse(
@@ -439,7 +442,7 @@ for (gene in genes) {
   )
   names(cluster_label) <- names(clusters_gene)
   
-  # --- get expression data (FPKM) ---
+  # Get expression data
   gene_ensembl <- bitr(
     gene,
     fromType = "SYMBOL",
@@ -449,7 +452,7 @@ for (gene in genes) {
   
   gex_data <- tcga$gexFpkm[grep(gene_ensembl, rownames(tcga$gexFpkm)), colnames(beta_mat)]
   
-  # --- prepare heatmap ---
+  # Prepare heatmap
   cpgs_overlapping <- my_cpgs
   betas_to_plot <- tcga$betaAdj[cpgs_overlapping, colnames(beta_mat), drop = FALSE]
   
@@ -489,11 +492,11 @@ for (gene in genes) {
     bottom_annotation = bottom_annotation
   )
   
-  # --- iterate over subtypes ---
+  # Iterate over subtypes
   for (subtype in subtypes) {
     samples_in_subtype <- names(my.pam50.subtype[colnames(beta_mat)][my.pam50.subtype[colnames(beta_mat)] == subtype])
     
-    # --- prepare dataframe ---
+    # Prepare dataframe
     tils_df <- data.frame(
       Gene = gene,
       Subtype = subtype,
@@ -505,7 +508,7 @@ for (gene in genes) {
     
     all_data_long_df <- rbind(all_data_long_df, tils_df)
     
-    # --- violin plots ---
+    # TILs plots
     list_of_tils_plots[[gene]][[subtype]] <- ggplot(tils_df, aes(x = Cluster, y = TILs)) +
       geom_violin(fill = "black", size = 0.1) +
       geom_boxplot(width = 0.1, size = 0.1) +
@@ -521,6 +524,7 @@ for (gene in genes) {
       ylim(0, max(tils_df$TILs, na.rm = TRUE) * 1.2) +
       theme(axis.title.y = ggtext::element_markdown())
     
+    # GEX plots
     list_of_gex_plots[[gene]][[subtype]] <- ggplot(tils_df, aes(x = Cluster, y = GEX)) +
       geom_violin(fill = "black", size = 0.1) +
       geom_boxplot(width = 0.1, size = 0.1) +
@@ -537,7 +541,7 @@ for (gene in genes) {
       theme(axis.title.y = ggtext::element_markdown())
     
     
-    # --- proportion of hypomethylation per subtype ---
+    # Proportion of hypomethylation per subtype
     n_sub <- length(samples_in_subtype)
     n_hypo <- sum(cluster_label[samples_in_subtype] == "Hypo.", na.rm = TRUE)
     prop_df <- data.frame(
@@ -552,20 +556,20 @@ for (gene in genes) {
   }
 }
 
-
+# Plotting TILs vs subtype and gene
 (list_of_tils_plots$CARD16$Basal | list_of_tils_plots$CARD16$Her2 | list_of_tils_plots$CARD16$LumA  | list_of_tils_plots$CARD16$LumB | list_of_tils_plots$CARD16$Normal)/
   (list_of_tils_plots$GBP4$Basal | list_of_tils_plots$GBP4$Her2 | list_of_tils_plots$GBP4$LumA  | list_of_tils_plots$GBP4$LumB | list_of_tils_plots$GBP4$Normal)/
   (list_of_tils_plots$OAS2$Basal | list_of_tils_plots$OAS2$Her2 | list_of_tils_plots$OAS2$LumA  | list_of_tils_plots$OAS2$LumB | list_of_tils_plots$OAS2$Normal)/
   (list_of_tils_plots$ZBP1$Basal | list_of_tils_plots$ZBP1$Her2 | list_of_tils_plots$ZBP1$LumA  | list_of_tils_plots$ZBP1$LumB | list_of_tils_plots$ZBP1$Normal)
 
-
+# Plotting GEX vs subtype and gene methylation
 (list_of_gex_plots$CARD16$Basal | list_of_gex_plots$CARD16$Her2 | list_of_gex_plots$CARD16$LumA  | list_of_gex_plots$CARD16$LumB | list_of_gex_plots$CARD16$Normal)/
   (list_of_gex_plots$GBP4$Basal | list_of_gex_plots$GBP4$Her2 | list_of_gex_plots$GBP4$LumA  | list_of_gex_plots$GBP4$LumB | list_of_gex_plots$GBP4$Normal)/
   (list_of_gex_plots$OAS2$Basal | list_of_gex_plots$OAS2$Her2 | list_of_gex_plots$OAS2$LumA  | list_of_gex_plots$OAS2$LumB | list_of_gex_plots$OAS2$Normal)/
   (list_of_gex_plots$ZBP1$Basal | list_of_gex_plots$ZBP1$Her2 | list_of_gex_plots$ZBP1$LumA  | list_of_gex_plots$ZBP1$LumB | list_of_gex_plots$ZBP1$Normal)
 
 
-# Data for piecharts
+# Plotting piecharts
 pie_data <- hypo_prop_summary %>%
   mutate(
     Hyper. = 1 - Hypo.
@@ -573,7 +577,7 @@ pie_data <- hypo_prop_summary %>%
   tidyr::pivot_longer(cols = c("Hypo.", "Hyper."), 
                       names_to = "State", values_to = "Proportion")
 
-# Plot
+
 ggplot(pie_data, aes(x = "", y = Proportion, fill = State)) +
   geom_bar(stat = "identity", width = 1, color = "white") +
   coord_polar(theta = "y") +
@@ -592,12 +596,11 @@ ggplot(pie_data, aes(x = "", y = Proportion, fill = State)) +
   ) 
 
 
-# Create a summary table of counts
+# Analyse statistical significance
 counts_df <- all_data_long_df %>%
   count(Gene, PAM50 = Subtype, Cluster) %>%
   tidyr::pivot_wider(names_from = PAM50, values_from = n, values_fill = 0)
 
-# Perform chi-squared test per gene
 chi_results <- all_data_long_df %>%
   group_by(Gene) %>%
   summarise(
@@ -619,7 +622,7 @@ heatmap_grobs <- lapply(list_of_heatmaps, function(ht) {
 wrap_plots(heatmap_grobs, ncol = 4)
 
 
-# Co ocurrence of hypomethylation
+# Plotting co-ocurrence of hypomethylation
 gene_sets <- all_data_long_df %>%
   filter(Cluster == "Hyper.") %>%
   group_by(Gene) %>%

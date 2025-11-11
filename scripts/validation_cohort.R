@@ -9,7 +9,7 @@ library(gprofiler2)
 #
 
 # Loading dicovery betas
-load("/Volumes/Data/Project_3/TNBC_epigenetics/workspace_full_trim235_updatedSampleAnno_withNmfClusters.RData")
+#load("/Volumes/Data/Project_3/TNBC_epigenetics/workspace_full_trim235_updatedSampleAnno_withNmfClusters.RData")
 
 load("/Volumes/Data/Project_3/validation_cohort/Combined_annotations_rel4SCANB_deNovoMainNMF_distalAtac5000_supervisedSubNMF.RData")
 load("/Volumes/Data/Project_3/validation_cohort/FPKM_rel4TNBC_validationCohort_n136.RData")
@@ -66,76 +66,87 @@ rownames(gex.data) <- combined_names
 #
 
 # Defining genes of interest
-current_gene_id <- "GBP4"
+gene_ids = c("GBP4", "ZBP1", "OAS2", "CARD16", "SAMD9L")
+list_of_heatmaps <- list()
 
-# Cluster based on methylation
-cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]],
-                 annoObj$illuminaID[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]])
-
-cluster_promoter <- kmeans(t(beta.adjusted[names(cpgs)[cpgs=="promoter"],]), centers = 2)
-
-# Determine hypo and hypermethylated cluster
-promoter_state <- if (mean(beta.adjusted[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==1]) >
-                           mean(beta.adjusted[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==2])) {
+for (current_gene_id in gene_ids) {
   
-  as.factor(ifelse(cluster_promoter$cluster == 1, "Hypermethylated", "Hypomethylated"))
   
-} else {
+  # Cluster based on methylation
+  cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]],
+                   annoObj$illuminaID[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]])
   
-  as.factor(ifelse(cluster_promoter$cluster == 2, "Hypermethylated", "Hypomethylated"))
+  cpgs <- cpgs[names(cpgs) %in% rownames(beta.adjusted)]
+  
+  cluster_promoter <- kmeans(t(beta.adjusted[names(cpgs),]), centers = 2)
+  
+  # Determine hypo and hypermethylated cluster
+  promoter_state <- if (mean(beta.adjusted[names(cpgs),cluster_promoter$cluster==1]) >
+                        mean(beta.adjusted[names(cpgs),cluster_promoter$cluster==2])) {
+    
+    as.factor(ifelse(cluster_promoter$cluster == 1, "Hypermethylated", "Hypomethylated"))
+    
+  } else {
+    
+    as.factor(ifelse(cluster_promoter$cluster == 2, "Hypermethylated", "Hypomethylated"))
+    
+  }
+  
+  # Generating annotation for heatmap
+  tnbc_annotation <- annotations[,"TNBCtype4"]
+  epi_annotation <- annotations[,"NMF_ATAC_finalSubClusters"]
+  pam50_annotation <- annotations[,"NCN_PAM50"]
+  pam50_annotation <- ifelse(pam50_annotation == "Uncl.", 
+                             "Uncl.", 
+                             ifelse(pam50_annotation == "Basal", 
+                                    "Basal", 
+                                    "Non-Basal"))
+  
+  
+  # Generate bottom annotation
+  bottom_annotation <- HeatmapAnnotation(
+    "FPKM" = anno_barplot(as.numeric(gex.data[current_gene_id,]))
+  )
+  
+  # Generate column annotation
+  column_annotation <- HeatmapAnnotation(PAM50 = pam50_annotation,
+                                         TNBC = tnbc_annotation,
+                                         Epitype = epi_annotation,
+                                         col = list(
+                                           "PAM50"=c("Basal"="indianred1", "Non-Basal"="darkblue","Uncl."="grey"),
+                                           "TNBC"=c("BL1"="red", "BL2"="blue", "LAR"="green", "M"="grey", "UNS"="black"),
+                                           "Epitype"=c("Basal1" = "tomato4", "Basal2" = "salmon2", "Basal3" = "red2", 
+                                                       "nonBasal1" = "cadetblue1", "nonBasal2" = "dodgerblue"))
+  )
+  
+  # Generate row annotation
+  cpgs_in_cassette <- names(promoter_10$colors)[promoter_10$colors == 10]
+  
+  row_annotation <- rowAnnotation("CpG_in_cassette" = names(cpgs)[names(cpgs) %in% rownames(beta.adjusted)] %in% cpgs_in_cassette,
+                                  col=list("CpG_in_cassette"=c("TRUE" = "black", "FALSE" = "white")))
+  
+  # Plotting heatmaps
+  list_of_heatmaps[[current_gene_id]] <- Heatmap(beta.adjusted[names(cpgs)[names(cpgs) %in% rownames(beta.adjusted)],],
+          column_split = promoter_state,
+          show_column_names = FALSE,
+          show_row_names = FALSE,
+          show_row_dend =  FALSE,
+          bottom_annotation = bottom_annotation, 
+          top_annotation = column_annotation,
+          left_annotation = row_annotation,
+          clustering_distance_columns =  "euclidean",
+          clustering_method_columns = "ward.D2",
+          clustering_distance_rows =  "euclidean",
+          clustering_method_rows = "ward.D2",
+          name = "Beta")
+  
+  # Testing significance in expression between groups
+  print(current_gene_id)
+  print(wilcox.test(as.numeric(gex.data[current_gene_id,]) ~ promoter_state))
   
 }
 
-# Generating annotation for heatmap
-tnbc_annotation <- annotations[,"TNBCtype4"]
-epi_annotation <- annotations[,"NMF_ATAC_finalSubClusters"]
-pam50_annotation <- annotations[,"NCN_PAM50"]
-pam50_annotation <- ifelse(pam50_annotation == "Uncl.", 
-                            "Uncl.", 
-                            ifelse(pam50_annotation == "Basal", 
-                                   "Basal", 
-                                   "Non-Basal"))
-
-
-# Generate bottom annotation
-bottom_annotation <- HeatmapAnnotation(
-  "FPKM" = anno_barplot(as.numeric(gex.data[current_gene_id,]))
-)
-
-# Generate column annotation
-column_annotation <- HeatmapAnnotation(PAM50 = pam50_annotation,
-                                       TNBC = tnbc_annotation,
-                                       Epitype = epi_annotation,
-                                       col = list(
-                                         "PAM50"=c("Basal"="indianred1", "Non-Basal"="darkblue","Uncl."="grey"),
-                                         "TNBC"=c("BL1"="red", "BL2"="blue", "LAR"="green", "M"="grey", "UNS"="black"),
-                                         "Epitype"=c("Basal1" = "tomato4", "Basal2" = "salmon2", "Basal3" = "red2", 
-                                                     "nonBasal1" = "cadetblue1", "nonBasal2" = "dodgerblue"))
-)
-
-# Generate row annotation
-cpgs_in_cassette <- names(promoter_10$colors)[promoter_10$colors == 10]
-
-row_annotation <- rowAnnotation("CpG_in_cassette" = names(cpgs)[names(cpgs) %in% rownames(beta.adjusted)] %in% cpgs_in_cassette,
-                                col=list("CpG_in_cassette"=c("TRUE" = "black", "FALSE" = "white")))
-
-# Plotting heatmaps
-Heatmap(beta.adjusted[names(cpgs)[names(cpgs) %in% rownames(beta.adjusted)],],
-        column_split = promoter_state,
-        show_column_names = FALSE,
-        show_row_names = FALSE,
-        show_row_dend =  FALSE,
-        bottom_annotation = bottom_annotation, 
-        top_annotation = column_annotation,
-        left_annotation = row_annotation,
-        clustering_distance_columns =  "euclidean",
-        clustering_method_columns = "ward.D2",
-        clustering_distance_rows =  "euclidean",
-        clustering_method_rows = "ward.D2",
-        name = "Beta")
-
-# Testing significance in expression between groups
-wilcox.test(as.numeric(gex.data[current_gene_id,]) ~ promoter_state)
+list_of_heatmaps[[5]]
 
 #
 # PLOTTING TILEPLOT OF PROMOTER HYPERMETHYLATION OF SELECTED GENES
@@ -153,7 +164,9 @@ for(current_gene_id in gene_ids) {
   cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]],
                    annoObj$illuminaID[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]])
   
-  cluster_promoter <- kmeans(t(beta.adjusted[names(cpgs)[cpgs=="promoter"],]), centers = 2)
+  cpgs <- cpgs[names(cpgs) %in% rownames(beta.adjusted)]
+  
+  cluster_promoter <- kmeans(t(beta.adjusted[names(cpgs),]), centers = 2)
   
   # Determine hypo and hypermethylated cluster
   promoter_state <- if (mean(beta.adjusted[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==1]) >
@@ -213,7 +226,7 @@ pval_to_stars <- function(pval) {
 # Basal/nonBasal
 
 pval_stars <- sapply(1:5, function(idx) {
-  pval <- chisq.test(clusters_methylation[idx, ], pam50_annotation == "Basal")$p.value
+  pval <- chisq.test(clusters_methylation[idx, ], pam50_annotation)$p.value
   pval_to_stars(pval)
 })
 
@@ -276,12 +289,12 @@ cpgs_of_interest <- cpgs_of_interest[cpgs_of_interest %in% rownames(beta.adjuste
 cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% cpgs_of_interest],
                  annoObj$illuminaID[annoObj$illuminaID %in% cpgs_of_interest])
 
-cluster_promoter <- kmeans(t(beta.adjusted[names(cpgs)[cpgs=="promoter"],]), centers = 2)
+cluster_promoter <- kmeans(t(beta.adjusted[names(cpgs),]), centers = 2)
 
 
 # Determine hypo and hypermethylated cluster
-promoter_state <- if (mean(beta.adjusted[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==1]) >
-                      mean(beta.adjusted[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==2])) {
+promoter_state <- if (mean(beta.adjusted[names(cpgs),cluster_promoter$cluster==1]) >
+                      mean(beta.adjusted[names(cpgs),cluster_promoter$cluster==2])) {
   
   as.factor(ifelse(cluster_promoter$cluster == 1, "Hypermethylated", "Hypomethylated"))
   

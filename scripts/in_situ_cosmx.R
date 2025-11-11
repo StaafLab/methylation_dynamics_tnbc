@@ -72,11 +72,11 @@ current_gene_id = "OAS2"
 cpgs <- setNames(annoObj$featureClass[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]],
                  annoObj$illuminaID[annoObj$illuminaID %in% names(genes)[genes == current_gene_id]])
 
-cluster_promoter <- kmeans(t(betaAdj[names(cpgs)[cpgs=="promoter"],]), centers = 2)
+cluster_promoter <- kmeans(t(betaAdj[names(cpgs),]), centers = 2)
 
 # Determine hypo and hypermethylated cluster
-promoter_state <- if (mean(betaAdj[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==1]) >
-                           mean(betaAdj[names(cpgs)[cpgs=="promoter"],cluster_promoter$cluster==2])) {
+promoter_state <- if (mean(betaAdj[names(cpgs),cluster_promoter$cluster==1]) >
+                           mean(betaAdj[names(cpgs),cluster_promoter$cluster==2])) {
   
   as.factor(ifelse(cluster_promoter$cluster == 1, "Hypermethylated", "Hypomethylated"))
   
@@ -184,8 +184,8 @@ label_df <- data.frame(
 
 
 ex_plot <- ggplot(filter(summary_per_tissue_12, !is.na(summary_per_tissue_12$Methylation)), aes(x=Methylation, y=mean_OAS2)) +
-  geom_jitter(fill="grey90", col="black", width = 0.25, size=0.7) +
-  
+  geom_violin(fill="black") +
+  geom_boxplot(width=0.1, size=0.2) +
   theme_bw(base_size = 14) +
   xlab(NULL) +
   ylim(0,1.52) +
@@ -199,7 +199,8 @@ ex_plot <- ggplot(filter(summary_per_tissue_12, !is.na(summary_per_tissue_12$Met
 
 # Proportion of cells with detected expressin of OAS2
 prop_plot <- ggplot(filter(summary_per_tissue_12, !is.na(summary_per_tissue_12$Methylation)), aes(x=Methylation, y=prop_OAS2 * 100)) +
-  geom_jitter(fill="grey90", col="black", width = 0.25, size=0.7) +
+  geom_violin(fill="black") +
+  geom_boxplot(width=0.1, size=0.2) +
   theme_bw(base_size = 14) +
   xlab(NULL) +
   ylim(0,38) +
@@ -214,7 +215,7 @@ prop_plot <- ggplot(filter(summary_per_tissue_12, !is.na(summary_per_tissue_12$M
 ex_plot | prop_plot
 
 
-### CONTROL. Plotting AR vs Basal/NonBasal
+##geom_violin()### CONTROL. Plotting AR vs Basal/NonBasal
 
 # Mean AR expression
 
